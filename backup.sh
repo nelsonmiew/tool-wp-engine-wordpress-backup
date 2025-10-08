@@ -38,20 +38,32 @@ validate_env_vars() {
     fi
     
     # Set default backup folders if not specified
-    if [[ -z "${backup_include_only_folders:-}" ]]; then
-        backup_include_only_folders="uploads,languages"
-        log "Using default backup folders: $backup_include_only_folders"
+    if [[ -z "${WP_BACKUP_INCLUDE_ONLY_FOLDERS:-}" ]]; then
+        WP_BACKUP_INCLUDE_ONLY_FOLDERS="uploads,languages"
+        log "Using default backup folders: $WP_BACKUP_INCLUDE_ONLY_FOLDERS"
     else
-        log "Using specified backup folders: $backup_include_only_folders"
+        log "Using specified backup folders: $WP_BACKUP_INCLUDE_ONLY_FOLDERS"
     fi
-    
+
+    # Set default backup destination if not specified
+    if [[ -z "${BACKUP_DEST:-}" ]]; then
+        BACKUP_DEST="~"
+        log "Using default backup destination: $BACKUP_DEST"
+    else
+        log "Using specified backup destination: $BACKUP_DEST"
+    fi
+
     log "Environment variables validated successfully"
 }
 
 # Create backup filename with current date
 create_backup_filename() {
     BACKUP_DATE=$(date +'%Y-%m-%d')
-    BACKUP_FILENAME="${BACKUP_DATE}.wp-content.zip"
+    if [[ -n "${BACKUP_TAG:-}" ]]; then
+        BACKUP_FILENAME="${BACKUP_DATE}.${BACKUP_TAG}.wp-content.zip"
+    else
+        BACKUP_FILENAME="${BACKUP_DATE}.wp-content.zip"
+    fi
     log "Backup filename: $BACKUP_FILENAME"
 }
 
@@ -72,10 +84,10 @@ setup_ssh_key() {
 # Create backup on remote server
 create_remote_backup() {
     log "Creating backup on remote server..."
-    
-    # Build folder paths based on backup_include_only_folders
+
+    # Build folder paths based on WP_BACKUP_INCLUDE_ONLY_FOLDERS
     local folder_paths=""
-    IFS=',' read -ra FOLDERS <<< "$backup_include_only_folders"
+    IFS=',' read -ra FOLDERS <<< "$WP_BACKUP_INCLUDE_ONLY_FOLDERS"
     for folder in "${FOLDERS[@]}"; do
         # Trim whitespace
         folder=$(echo "$folder" | xargs)
@@ -83,56 +95,64 @@ create_remote_backup() {
             folder_paths="$folder_paths wp-content/$folder/"
         fi
     done
-    
+
     if [[ -z "$folder_paths" ]]; then
         error "No valid folders specified for backup"
         cleanup_and_exit 1
     fi
-    
+
     log "Backing up folders: $folder_paths"
-    
-    # Create zip command for specified wp-content folders
-    local zip_command="cd $SSH_PATH && zip -r $BACKUP_FILENAME \
+
+    # Ensure the backup destination directory exists on remote server
+    log "Ensuring backup destination directory exists..."
+    if ! ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" "mkdir -p $BACKUP_DEST"; then
+        error "Failed to create backup destination directory on remote server"
+        cleanup_and_exit 1
+    fi
+
+    # Create a test file to verify and display the absolute path
+    log "Verifying backup destination path..."
+    local test_file="${BACKUP_FILENAME}.location.txt"
+    local remote_abs_path=$(ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" "cd $BACKUP_DEST && pwd && echo 'Backup will be created at: \$(pwd)/$BACKUP_FILENAME' > $test_file && cat $test_file && rm $test_file")
+
+    if [[ -z "$remote_abs_path" ]]; then
+        error "Failed to verify backup destination directory"
+        cleanup_and_exit 1
+    fi
+
+    echo "$remote_abs_path"
+    echo ""
+
+    # Create zip command for specified wp-content folders in the destination directory
+    # The backup path expansion happens on the remote server
+    local zip_command="cd $SSH_PATH && zip -r $BACKUP_DEST/$BACKUP_FILENAME \
         $folder_paths \
         wp-config.php \
         wp-includes/version.php \
         -x 'wp-content/cache/*' 'wp-content/tmp/*' \
         || echo 'Some files may have been skipped due to permissions'"
-    
+
     if ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" "$zip_command"; then
-        log "Backup created successfully on remote server"
+        # Extract just the directory path from the verification output
+        local backup_dir=$(echo "$remote_abs_path" | head -n1)
+        local full_backup_path="${backup_dir}/${BACKUP_FILENAME}"
+
+        # Check if the backup was actually created
+        if ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" "test -f $BACKUP_DEST/$BACKUP_FILENAME"; then
+            log "Backup created successfully"
+            echo ""
+            echo -e "${GREEN}Backup file location:${NC} $SSH_USER@$SSH_HOST:$full_backup_path"
+            echo ""
+        else
+            error "Backup file was not created on remote server"
+            cleanup_and_exit 1
+        fi
     else
         error "Failed to create backup on remote server"
         cleanup_and_exit 1
     fi
 }
 
-# Download backup to local home directory
-download_backup() {
-    log "Downloading backup to home directory..."
-    
-    local remote_path="$SSH_USER@$SSH_HOST:$SSH_PATH/$BACKUP_FILENAME"
-    local local_path="$HOME/$BACKUP_FILENAME"
-    
-    if scp $SSH_OPTS "$remote_path" "$local_path"; then
-        local file_size=$(du -h "$local_path" | cut -f1)
-        log "Backup downloaded successfully to $local_path (Size: $file_size)"
-    else
-        error "Failed to download backup"
-        cleanup_and_exit 1
-    fi
-}
-
-# Clean up remote backup file
-cleanup_remote_backup() {
-    log "Cleaning up remote backup file..."
-    
-    if ssh $SSH_OPTS "$SSH_USER@$SSH_HOST" "rm -f $SSH_PATH/$BACKUP_FILENAME"; then
-        log "Remote backup file cleaned up"
-    else
-        warning "Failed to clean up remote backup file"
-    fi
-}
 
 # Cleanup function
 cleanup_and_exit() {
@@ -165,13 +185,7 @@ main() {
     
     # Create backup on remote server
     create_remote_backup
-    
-    # Download backup to local machine
-    download_backup
-    
-    # Clean up remote backup file
-    cleanup_remote_backup
-    
+
     log "Backup process completed successfully!"
 }
 
