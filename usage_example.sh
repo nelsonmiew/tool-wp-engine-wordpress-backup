@@ -14,26 +14,22 @@ echo "export SSH_PATH=\"/var/www/html/wordpress\""
 echo "export SSH_PUBLIC_KEY=\"\$(cat ~/.ssh/id_rsa)\""
 
 echo ""
-echo "2. Running the Python version:"
-echo "python3 backup.py"
-
-echo ""
-echo "3. Running the Bash version:"
+echo "2. Running the backup script:"
 echo "./backup.sh"
 
 echo ""
-echo "4. Expected output files:"
+echo "3. Expected output files:"
 echo "~/$(date +'%Y-%m-%d').wp-content.zip"
 
 echo ""
-echo "5. What gets backed up:"
+echo "4. What gets backed up:"
 echo "   - wp-content/uploads/ (all media files)"
 echo "   - wp-content/themes/ (WordPress themes)"
 echo "   - wp-content/plugins/ (WordPress plugins)"
 echo "   - wp-config.php (WordPress configuration)"
 
 echo ""
-echo "6. Files excluded from backup:"
+echo "5. Files excluded from backup:"
 echo "   - wp-content/cache/ (cache files)"
 echo "   - wp-content/tmp/ (temporary files)"
 

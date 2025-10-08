@@ -1,6 +1,6 @@
 # WordPress Backup Tool for WP Engine
 
-A tool to create WordPress content and database backups via SSH. This tool connects to your WordPress server, creates a zip backup of important files and folders, and downloads it to your local machine with a date-based filename.
+A lightweight shell script tool to create WordPress content backups via SSH. This tool connects to your WordPress server, creates a zip backup of important files and folders, and downloads it to your local machine with a date-based filename.
 
 ## Features
 
@@ -10,18 +10,14 @@ A tool to create WordPress content and database backups via SSH. This tool conne
 - 📅 Date-based filename pattern: `YYYY-MM-DD.wp-content.zip`
 - 🏠 Downloads backup to your home directory
 - 🧹 Automatic cleanup of remote backup files
-- 🐍 Available in both Python and Bash versions
+- 🚀 Lightweight shell script implementation
 
 ## Requirements
 
-### For Python version:
-- Python 3.6+
-- paramiko library
-
-### For Bash version:
 - SSH client
 - SCP client
 - zip/unzip utilities
+- Bash shell
 
 ## Installation
 
@@ -31,9 +27,9 @@ git clone https://github.com/nelsonmiew/tool-wp-engine-wordpress-backup.git
 cd tool-wp-engine-wordpress-backup
 ```
 
-2. For Python version, install dependencies:
+2. Make the script executable:
 ```bash
-pip install -r requirements.txt
+chmod +x backup.sh
 ```
 
 ## Configuration
@@ -59,12 +55,7 @@ export SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa)"
 
 ## Usage
 
-### Python Version:
-```bash
-python backup.py
-```
-
-### Bash Version:
+Run the backup script:
 ```bash
 ./backup.sh
 ```
@@ -93,7 +84,7 @@ For example: `~/2024-01-15.wp-content.zip`
 ## Security Notes
 
 - SSH private keys are handled securely and cleaned up after use
-- The tool uses paramiko for secure SSH connections in Python
+- The tool uses standard SSH/SCP commands for secure connections
 - Remote backup files are automatically deleted after download
 - No credentials are stored permanently
 
