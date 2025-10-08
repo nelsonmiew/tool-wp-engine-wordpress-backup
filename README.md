@@ -1,2 +1,115 @@
-# tool-wp-engine-wordpress-backup
-A tool to create worpdress content and database backup. 
+# WordPress Backup Tool for WP Engine
+
+A tool to create WordPress content and database backups via SSH. This tool connects to your WordPress server, creates a zip backup of important files and folders, and downloads it to your local machine with a date-based filename.
+
+## Features
+
+- 🔐 SSH connection with key or password authentication
+- 📦 Automated zip backup creation
+- 📁 Backs up wp-content/uploads, themes, plugins, and wp-config.php
+- 📅 Date-based filename pattern: `YYYY-MM-DD.wp-content.zip`
+- 🏠 Downloads backup to your home directory
+- 🧹 Automatic cleanup of remote backup files
+- 🐍 Available in both Python and Bash versions
+
+## Requirements
+
+### For Python version:
+- Python 3.6+
+- paramiko library
+
+### For Bash version:
+- SSH client
+- SCP client
+- zip/unzip utilities
+
+## Installation
+
+1. Clone this repository:
+```bash
+git clone https://github.com/nelsonmiew/tool-wp-engine-wordpress-backup.git
+cd tool-wp-engine-wordpress-backup
+```
+
+2. For Python version, install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## Configuration
+
+Set the following environment variables:
+
+### Required Variables:
+- `SSH_USER`: SSH username for the remote server
+- `SSH_HOST`: SSH hostname or IP address
+- `SSH_PATH`: Path to WordPress installation on remote server
+
+### Optional Variables:
+- `SSH_PUBLIC_KEY`: SSH private key content (if not set, will use password auth)
+- `SSH_MYSQL_PATH`: MySQL path (for future database backup features)
+
+### Example:
+```bash
+export SSH_USER="your-username"
+export SSH_HOST="your-server.com"
+export SSH_PATH="/var/www/html/wordpress"
+export SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa)"
+```
+
+## Usage
+
+### Python Version:
+```bash
+python backup.py
+```
+
+### Bash Version:
+```bash
+./backup.sh
+```
+
+## What Gets Backed Up
+
+The tool creates a zip file containing:
+- `wp-content/uploads/` - All uploaded media files
+- `wp-content/themes/` - WordPress themes
+- `wp-content/plugins/` - WordPress plugins
+- `wp-config.php` - WordPress configuration file
+
+**Excluded from backup:**
+- `wp-content/cache/` - Cache files
+- `wp-content/tmp/` - Temporary files
+
+## Output
+
+The backup file will be saved to your home directory with the format:
+```
+~/YYYY-MM-DD.wp-content.zip
+```
+
+For example: `~/2024-01-15.wp-content.zip`
+
+## Security Notes
+
+- SSH private keys are handled securely and cleaned up after use
+- The tool uses paramiko for secure SSH connections in Python
+- Remote backup files are automatically deleted after download
+- No credentials are stored permanently
+
+## Troubleshooting
+
+### Permission Errors
+If you encounter permission errors, ensure your SSH user has read access to the WordPress directory and write access to create zip files.
+
+### Connection Issues
+- Verify SSH credentials and server accessibility
+- Check that SSH service is running on the target server
+- Ensure firewall allows SSH connections
+
+### Missing Files in Backup
+Some files may be skipped due to permissions. The tool will continue and report warnings for any inaccessible files.
+
+## Contributing
+
+Feel free to submit issues and enhancement requests! 
