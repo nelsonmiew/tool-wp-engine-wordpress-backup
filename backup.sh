@@ -37,6 +37,14 @@ validate_env_vars() {
         exit 1
     fi
     
+    # Set default backup folders if not specified
+    if [[ -z "${backup_include_only_folders:-}" ]]; then
+        backup_include_only_folders="uploads,languages"
+        log "Using default backup folders: $backup_include_only_folders"
+    else
+        log "Using specified backup folders: $backup_include_only_folders"
+    fi
+    
     log "Environment variables validated successfully"
 }
 
@@ -65,11 +73,27 @@ setup_ssh_key() {
 create_remote_backup() {
     log "Creating backup on remote server..."
     
-    # Create zip command for wp-content and important files
+    # Build folder paths based on backup_include_only_folders
+    local folder_paths=""
+    IFS=',' read -ra FOLDERS <<< "$backup_include_only_folders"
+    for folder in "${FOLDERS[@]}"; do
+        # Trim whitespace
+        folder=$(echo "$folder" | xargs)
+        if [[ -n "$folder" ]]; then
+            folder_paths="$folder_paths wp-content/$folder/"
+        fi
+    done
+    
+    if [[ -z "$folder_paths" ]]; then
+        error "No valid folders specified for backup"
+        cleanup_and_exit 1
+    fi
+    
+    log "Backing up folders: $folder_paths"
+    
+    # Create zip command for specified wp-content folders
     local zip_command="cd $SSH_PATH && zip -r $BACKUP_FILENAME \
-        wp-content/uploads/ \
-        wp-content/themes/ \
-        wp-content/plugins/ \
+        $folder_paths \
         wp-config.php \
         -x 'wp-content/cache/*' 'wp-content/tmp/*' \
         || echo 'Some files may have been skipped due to permissions'"

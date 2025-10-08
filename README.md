@@ -44,6 +44,7 @@ Set the following environment variables:
 ### Optional Variables:
 - `SSH_PUBLIC_KEY`: SSH private key content (if not set, will use password auth)
 - `SSH_MYSQL_PATH`: MySQL path (for future database backup features)
+- `backup_include_only_folders`: Comma-separated list of folders within wp-content to backup (default: "uploads,languages")
 
 ### Example:
 ```bash
@@ -51,6 +52,7 @@ export SSH_USER="your-username"
 export SSH_HOST="your-server.com"
 export SSH_PATH="/var/www/html/wordpress"
 export SSH_PUBLIC_KEY="$(cat ~/.ssh/id_rsa)"
+export backup_include_only_folders="uploads,languages"
 ```
 
 ## Usage
@@ -63,14 +65,19 @@ Run the backup script:
 ## What Gets Backed Up
 
 The tool creates a zip file containing:
-- `wp-content/uploads/` - All uploaded media files
-- `wp-content/themes/` - WordPress themes
-- `wp-content/plugins/` - WordPress plugins
+- Folders specified in `backup_include_only_folders` (default: uploads, languages)
+  - `wp-content/uploads/` - All uploaded media files (default)
+  - `wp-content/languages/` - WordPress language files (default)
 - `wp-config.php` - WordPress configuration file
 
 **Excluded from backup:**
 - `wp-content/cache/` - Cache files
 - `wp-content/tmp/` - Temporary files
+
+You can customize which folders to backup by setting the `backup_include_only_folders` environment variable:
+```bash
+export backup_include_only_folders="uploads,themes,plugins"
+```
 
 ## Output
 
