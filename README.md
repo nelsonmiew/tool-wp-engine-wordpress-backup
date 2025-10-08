@@ -69,6 +69,7 @@ The tool creates a zip file containing:
   - `wp-content/uploads/` - All uploaded media files (default)
   - `wp-content/languages/` - WordPress language files (default)
 - `wp-config.php` - WordPress configuration file
+- `wp-includes/version.php` - WordPress version information
 
 **Excluded from backup:**
 - `wp-content/cache/` - Cache files

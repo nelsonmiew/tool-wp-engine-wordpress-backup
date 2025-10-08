@@ -95,6 +95,7 @@ create_remote_backup() {
     local zip_command="cd $SSH_PATH && zip -r $BACKUP_FILENAME \
         $folder_paths \
         wp-config.php \
+        wp-includes/version.php \
         -x 'wp-content/cache/*' 'wp-content/tmp/*' \
         || echo 'Some files may have been skipped due to permissions'"
     
