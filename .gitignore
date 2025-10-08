@@ -1,0 +1,26 @@
+# Environment files
+.env
+*.env
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
+
+# Backup files
+*.zip
+*.tar.gz
+*.sql
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
